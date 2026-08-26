@@ -3,6 +3,7 @@
 Idempotent: safe to run repeatedly. Only for dev/CI databases.
 """
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 E2E_ADMIN_EMAIL = "e2e-admin@example.com"
@@ -36,3 +37,4 @@ class Command(BaseCommand):
                 f"e2e admin {'created' if created else 'updated'}: {E2E_ADMIN_USERNAME}"
             )
         )
+        call_command("seed_demo", stdout=self.stdout)
