@@ -4,8 +4,8 @@ import Providers from './providers'
 import ClientShell from './ClientShell'
 
 export const metadata: Metadata = {
-  title: 'reactdjango',
-  description: 'A Django + React boilerplate',
+  title: 'BP-Company',
+  description: 'Service-provider website template',
   icons: {
     icon: '/branding/logo.ico',
     shortcut: '/branding/logo.ico',

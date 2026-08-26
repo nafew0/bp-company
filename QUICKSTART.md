@@ -41,7 +41,7 @@ npm run dev
 
 | URL | What |
 |-----|------|
-| http://localhost:3000 | Public site (placeholder until BP-3) |
+| http://localhost:3000 | Public site — locale-routed, redirects to `/en` or `/bn` (placeholder until BP-3) |
 | http://localhost:3000/login | Staff login |
 | http://localhost:3000/admin | Admin panel (requires `is_staff`) |
 | http://localhost:8000/admin | Django admin |

@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test'
 import { E2E_ADMIN, login } from './helpers'
 
 test.describe('BP-0 smoke', () => {
-  test('home placeholder renders', async ({ page }) => {
+  test('home placeholder renders (locale-redirected)', async ({ page }) => {
     await page.goto('/')
+    await expect(page).toHaveURL(/\/en$/)
     await expect(page.getByRole('heading', { name: 'BP-Company' })).toBeVisible()
     await expect(page.getByRole('link', { name: /log ?in/i }).first()).toBeVisible()
   })

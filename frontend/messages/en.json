@@ -1,0 +1,23 @@
+{
+  "common": {
+    "siteName": "BP-Company",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "home": "Home",
+    "login": "Login"
+  },
+  "home": {
+    "title": "BP-Company",
+    "body": "Service-provider website template — public site arrives in Phase BP-3.",
+    "loginCta": "Login"
+  },
+  "languageToggle": {
+    "ariaLabel": "Change language"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist or has moved.",
+    "backHome": "Back to home"
+  }
+}

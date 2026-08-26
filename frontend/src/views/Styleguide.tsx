@@ -9,6 +9,7 @@ import {
   Eyebrow,
   Field,
   Input,
+  LanguageToggle,
   Reveal,
   Section,
   SectionDivider,
@@ -100,7 +101,10 @@ export default function StyleguideView() {
     <main className="font-text">
       <Section tone="base">
         <Container>
-          <Eyebrow>Site kit</Eyebrow>
+          <div className="flex items-start justify-between gap-4">
+            <Eyebrow>Site kit</Eyebrow>
+            <LanguageToggle />
+          </div>
           <h1 className="mt-2 text-headline-lg text-ink">BP-Company Styleguide</h1>
           <p className="mt-3 max-w-content-tight text-body-lg text-ink-secondary">
             Every generic primitive rendered under the active theme tokens. Re-theme via
