@@ -7,9 +7,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image, ImageOps, ImageSequence, UnidentifiedImageError
 
-from subscriptions.serializers import PlanSummarySerializer
-from subscriptions.services import LicenseService
-
 from .branding import resolve_branding_asset_url
 from .signup_protection import (
     GENERIC_SIGNUP_FAILURE_MESSAGE,
@@ -82,8 +79,6 @@ def sanitize_avatar_upload(uploaded_file):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model."""
 
-    current_plan = serializers.SerializerMethodField()
-
     class Meta:
         model = User
         fields = [
@@ -98,15 +93,10 @@ class UserSerializer(serializers.ModelSerializer):
             "designation",
             "phone",
             "email_verified",
-            "current_plan",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
-
-    def get_current_plan(self, obj):
-        plan = LicenseService.get_user_plan(obj)
-        return PlanSummarySerializer(plan).data
 
 
 class PublicBrandingSerializer(serializers.Serializer):

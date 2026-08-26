@@ -18,8 +18,6 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from PIL import Image
 
-from subscriptions.models import BkashTransaction, Plan, SubscriptionEvent, UserSubscription
-
 from .admin import UserAdmin as AccountsUserAdmin
 from .admin_views import get_site_settings
 from .models import EmailVerificationToken, User, UserSocialAccount
@@ -678,7 +676,7 @@ class SocialProviderEndpointTests(AccountsBaseTestCase):
     DB_ENGINE="django.db.backends.sqlite3",
     GOOGLE_OAUTH_CLIENT_ID="google-id",
     GOOGLE_OAUTH_CLIENT_SECRET="google-secret",
-    MEDIA_ROOT=tempfile.mkdtemp(prefix="reactdjango-branding-tests-"),
+    MEDIA_ROOT=tempfile.mkdtemp(prefix="bp-company-branding-tests-"),
 )
 class AdminSettingsSocialTests(AccountsBaseTestCase):
     def setUp(self):
@@ -840,6 +838,224 @@ class AdminGateTests(AccountsBaseTestCase):
         response = self.client.get("/api/admin/_gate/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(DB_ENGINE="django.db.backends.sqlite3")
+class AdminDashboardTests(AccountsBaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.admin_user = User.objects.create_superuser(
+            username="admin-user",
+            email="admin@example.com",
+            password="AdminPass123!",
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_dashboard_returns_user_stats_payload(self):
+        User.objects.create_user(
+            username="active-user",
+            email="active@example.com",
+            password="TestPass123!",
+            email_verified=True,
+        )
+        inactive_user = User.objects.create_user(
+            username="inactive-user",
+            email="inactive@example.com",
+            password="TestPass123!",
+            email_verified=True,
+        )
+        inactive_user.is_active = False
+        inactive_user.save(update_fields=["is_active"])
+        old_user = User.objects.create_user(
+            username="old-user",
+            email="old@example.com",
+            password="TestPass123!",
+            email_verified=True,
+        )
+        User.objects.filter(pk=old_user.pk).update(
+            created_at=timezone.now() - timedelta(days=45)
+        )
+
+        response = self.client.get("/api/admin/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            set(response.data.keys()),
+            {
+                "total_users",
+                "active_users",
+                "staff_users",
+                "new_users_this_week",
+                "new_users_this_month",
+            },
+        )
+        self.assertEqual(response.data["total_users"], 4)
+        self.assertEqual(response.data["active_users"], 3)
+        self.assertEqual(response.data["staff_users"], 1)
+        self.assertEqual(response.data["new_users_this_week"], 3)
+        self.assertEqual(response.data["new_users_this_month"], 3)
+
+    def test_dashboard_is_forbidden_for_regular_user(self):
+        regular_user = User.objects.create_user(
+            username="regular-user",
+            email="regular@example.com",
+            password="TestPass123!",
+            email_verified=True,
+        )
+        client = APIClient()
+        client.force_authenticate(user=regular_user)
+
+        response = client.get("/api/admin/dashboard/")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(DB_ENGINE="django.db.backends.sqlite3")
+class AdminUsersEndpointTests(AccountsBaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.admin_user = User.objects.create_superuser(
+            username="admin-user",
+            email="admin@example.com",
+            password="AdminPass123!",
+        )
+        self.client.force_authenticate(user=self.admin_user)
+        self.target_user = User.objects.create_user(
+            username="target-user",
+            email="target@example.com",
+            password="TestPass123!",
+            email_verified=True,
+            first_name="Target",
+            last_name="Person",
+        )
+
+    def test_users_list_returns_paginated_results_without_plans(self):
+        response = self.client.get("/api/admin/users/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            set(response.data.keys()),
+            {"count", "next", "previous", "results"},
+        )
+        self.assertEqual(response.data["count"], 2)
+        usernames = {row["username"] for row in response.data["results"]}
+        self.assertEqual(usernames, {"admin-user", "target-user"})
+        first_row = response.data["results"][0]
+        self.assertNotIn("current_plan", first_row)
+        self.assertIn("email_verified", first_row)
+        self.assertIn("is_active", first_row)
+
+    def test_users_list_supports_search(self):
+        response = self.client.get("/api/admin/users/", {"search": "target"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["username"], "target-user")
+
+    def test_users_list_supports_is_active_filter_and_ordering(self):
+        self.target_user.is_active = False
+        self.target_user.save(update_fields=["is_active"])
+
+        response = self.client.get(
+            "/api/admin/users/", {"is_active": "false", "ordering": "username"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["username"], "target-user")
+
+    def test_user_detail_returns_user_payload_only(self):
+        response = self.client.get(f"/api/admin/users/{self.target_user.pk}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data.keys()), {"user"})
+        self.assertEqual(response.data["user"]["username"], "target-user")
+        self.assertNotIn("subscription", response.data["user"])
+        self.assertIn("is_active", response.data["user"])
+        self.assertIn("email_verified", response.data["user"])
+
+    def test_user_detail_patch_deactivates_and_reactivates_user(self):
+        response = self.client.patch(
+            f"/api/admin/users/{self.target_user.pk}/",
+            {"is_active": False},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["user"]["is_active"])
+        self.target_user.refresh_from_db()
+        self.assertFalse(self.target_user.is_active)
+
+        response = self.client.patch(
+            f"/api/admin/users/{self.target_user.pk}/",
+            {"is_active": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target_user.refresh_from_db()
+        self.assertTrue(self.target_user.is_active)
+
+    def test_user_detail_patch_blocks_self_deactivation(self):
+        response = self.client.patch(
+            f"/api/admin/users/{self.admin_user.pk}/",
+            {"is_active": False},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.admin_user.refresh_from_db()
+        self.assertTrue(self.admin_user.is_active)
+
+
+@override_settings(
+    DB_ENGINE="django.db.backends.sqlite3",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    PUBLIC_APP_URL="http://localhost:5555",
+)
+class LogoutAndPasswordResetTests(AccountsBaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(
+            username="logout-user",
+            email="logout@example.com",
+            password="TestPass123!",
+            email_verified=True,
+        )
+
+    def test_logout_blacklists_refresh_token_and_clears_cookie(self):
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[get_refresh_cookie_name()] = str(refresh)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post("/api/auth/logout/", {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Logout successful.")
+        self.assertEqual(response.cookies[get_refresh_cookie_name()].value, "")
+
+    def test_password_reset_request_sends_email_for_known_user(self):
+        response = self.client.post(
+            "/api/auth/password-reset/request/",
+            {"identifier": self.user.email},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("detail", response.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.user.email, mail.outbox[0].to)
+
+    def test_password_reset_request_is_generic_for_unknown_user(self):
+        response = self.client.post(
+            "/api/auth/password-reset/request/",
+            {"identifier": "nobody@example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("detail", response.data)
+        self.assertEqual(len(mail.outbox), 0)
 
 
 @override_settings(
@@ -1079,25 +1295,7 @@ class AdminUserDeletionTests(AccountsBaseTestCase):
         )
         self.client.force_authenticate(user=self.admin_user)
 
-    def get_free_plan(self):
-        plan, _ = Plan.objects.get_or_create(
-            slug="free",
-            defaults={
-                "name": "Free",
-                "tier": 1,
-                "max_items": 0,
-                "price_monthly": 0,
-                "price_yearly": 0,
-                "bkash_price_monthly": 0,
-                "bkash_price_yearly": 0,
-                "currency": "USD",
-                "is_active": True,
-            },
-        )
-        return plan
-
     def create_user_with_related_data(self, *, username="target", email="target@example.com"):
-        plan = self.get_free_plan()
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -1112,37 +1310,6 @@ class AdminUserDeletionTests(AccountsBaseTestCase):
             email=user.email,
             email_verified=True,
             display_name="Target User",
-        )
-        subscription, _ = UserSubscription.objects.get_or_create(
-            user=user,
-            defaults={
-                "plan": plan,
-                "status": UserSubscription.Status.ACTIVE,
-                "billing_cycle": UserSubscription.BillingCycle.MONTHLY,
-                "payment_provider": UserSubscription.PaymentProvider.NONE,
-            },
-        )
-        BkashTransaction.objects.create(
-            user=user,
-            subscription=subscription,
-            target_plan=plan,
-            billing_cycle=UserSubscription.BillingCycle.MONTHLY,
-            payment_id=f"payment-{user.pk}",
-            trx_id=f"trx-{user.pk}",
-            invoice_number=f"invoice-{user.pk}",
-            amount="100.00",
-            currency="BDT",
-            status=BkashTransaction.Status.COMPLETED,
-        )
-        SubscriptionEvent.objects.create(
-            subscription=subscription,
-            user=user,
-            event_type=SubscriptionEvent.EventType.BASELINE,
-            plan=plan,
-            status=subscription.status,
-            payment_provider=subscription.payment_provider,
-            billing_cycle=subscription.billing_cycle,
-            metadata={"source": "test"},
         )
         return user
 
@@ -1159,15 +1326,6 @@ class AdminUserDeletionTests(AccountsBaseTestCase):
         )
         self.assertEqual(
             UserSocialAccount.objects.filter(user_id=target_user.pk).count(), 0
-        )
-        self.assertEqual(
-            UserSubscription.objects.filter(user_id=target_user.pk).count(), 0
-        )
-        self.assertEqual(
-            BkashTransaction.objects.filter(user_id=target_user.pk).count(), 0
-        )
-        self.assertEqual(
-            SubscriptionEvent.objects.filter(user_id=target_user.pk).count(), 0
         )
 
     def test_delete_rejects_superuser_target(self):

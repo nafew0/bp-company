@@ -1,6 +1,5 @@
 """
-Django settings for reactdjango project.
-Template created from AniFight project.
+Django settings for the bp_company project.
 """
 
 import os
@@ -11,7 +10,6 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
-from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -161,7 +159,6 @@ INSTALLED_APPS = [
     "channels",
     # Local apps
     "accounts",
-    "subscriptions",
 ]
 
 MIDDLEWARE = [
@@ -211,7 +208,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": db_engine,
-            "NAME": os.environ.get("DB_NAME", "reactdjango_db"),
+            "NAME": os.environ.get("DB_NAME", "bp_company_db"),
             "USER": os.environ.get("DB_USER", "postgres"),
             "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
@@ -346,7 +343,7 @@ else:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "reactdjango-local-cache",
+            "LOCATION": "bp-company-local-cache",
         }
     }
 
@@ -367,27 +364,21 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = env_bool("CELERY_TASK_EAGER_PROPAGATES", True)
-CELERY_BEAT_SCHEDULE = {
-    "subscriptions-check-expiring-subscriptions": {
-        "task": "subscriptions.tasks.check_expiring_subscriptions",
-        "schedule": crontab(hour=2, minute=0),
-    },
-    "subscriptions-check-expired-subscriptions": {
-        "task": "subscriptions.tasks.check_expired_subscriptions",
-        "schedule": crontab(hour=3, minute=0),
-    },
-    "subscriptions-expire-stale-bkash-transactions": {
-        "task": "subscriptions.tasks.expire_stale_bkash_transactions",
-        "schedule": crontab(minute=15),
-    },
-}
+# Add periodic tasks here (import crontab from celery.schedules), e.g.:
+# CELERY_BEAT_SCHEDULE = {
+#     "myapp-nightly-task": {
+#         "task": "myapp.tasks.nightly_task",
+#         "schedule": crontab(hour=2, minute=0),
+#     },
+# }
+CELERY_BEAT_SCHEDULE = {}
 
 USE_X_FORWARDED_HOST = env_bool("USE_X_FORWARDED_HOST", not DEBUG)
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 
-AUTH_REFRESH_COOKIE_NAME = os.environ.get("AUTH_REFRESH_COOKIE_NAME", "reactdjango_refresh")
+AUTH_REFRESH_COOKIE_NAME = os.environ.get("AUTH_REFRESH_COOKIE_NAME", "bp_company_refresh")
 AUTH_REFRESH_COOKIE_PATH = os.environ.get("AUTH_REFRESH_COOKIE_PATH", "/api/auth/")
 AUTH_REFRESH_COOKIE_SECURE = env_bool("AUTH_REFRESH_COOKIE_SECURE", IS_PRODUCTION)
 AUTH_REFRESH_COOKIE_SAMESITE = os.environ.get("AUTH_REFRESH_COOKIE_SAMESITE", "Strict")
@@ -406,9 +397,6 @@ SIGNUP_FORM_MIN_AGE_SECONDS = int(os.environ.get("SIGNUP_FORM_MIN_AGE_SECONDS", 
 SIGNUP_FORM_MAX_AGE_SECONDS = int(os.environ.get("SIGNUP_FORM_MAX_AGE_SECONDS", "3600"))
 SIGNUP_DISPOSABLE_EMAIL_BLOCKLIST = env_list("SIGNUP_DISPOSABLE_EMAIL_BLOCKLIST", [])
 SIGNUP_DISPOSABLE_EMAIL_ALLOWLIST = env_list("SIGNUP_DISPOSABLE_EMAIL_ALLOWLIST", [])
-BKASH_CALLBACK_TRUSTED_IPS = env_list("BKASH_CALLBACK_TRUSTED_IPS", [])
-BKASH_WEBHOOK_TOPIC_ARN = os.environ.get("BKASH_WEBHOOK_TOPIC_ARN", "").strip()
-BKASH_WEBHOOK_URL = os.environ.get("BKASH_WEBHOOK_URL", "").strip()
 CONTENT_SECURITY_POLICY = "; ".join(
     [
         "default-src 'self'",
@@ -480,11 +468,6 @@ if IS_PRODUCTION and (
         CACHES["default"]["BACKEND"],
     )
 
-# Stripe
-STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
-STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-
 # Social auth
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
 GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
@@ -499,16 +482,6 @@ FACEBOOK_GRAPH_API_VERSION = os.environ.get(
 ).strip() or "v25.0"
 GITHUB_OAUTH_CLIENT_ID = os.environ.get("GITHUB_OAUTH_CLIENT_ID", "").strip()
 GITHUB_OAUTH_CLIENT_SECRET = os.environ.get("GITHUB_OAUTH_CLIENT_SECRET", "").strip()
-
-# bKash
-BKASH_APP_KEY = os.environ.get("BKASH_APP_KEY", "")
-BKASH_APP_SECRET = os.environ.get("BKASH_APP_SECRET", "")
-BKASH_USERNAME = os.environ.get("BKASH_USERNAME", "")
-BKASH_PASSWORD = os.environ.get("BKASH_PASSWORD", "")
-BKASH_BASE_URL = os.environ.get(
-    "BKASH_BASE_URL",
-    "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
-)
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 AUDIT_LOG_LEVEL = os.environ.get("AUDIT_LOG_LEVEL", "INFO")

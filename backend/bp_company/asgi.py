@@ -1,5 +1,5 @@
 """
-ASGI config for reactdjango project.
+ASGI config for bp_company project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 """

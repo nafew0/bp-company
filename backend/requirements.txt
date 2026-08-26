@@ -35,16 +35,13 @@ black==24.1.1
 # Utilities
 python-dateutil==2.8.2
 
-# Payments
-stripe>=7.0.0
-
 # Async task queue
 celery[redis]>=5.3.6
 
-# HTTP client (bKash API calls)
+# HTTP client (social auth provider APIs)
 requests>=2.31.0
 
-# bKash SNS webhook signature verification
+# Cryptographic primitives (used by authlib for OAuth flows)
 cryptography>=42.0.0
 
 # OAuth client integrations

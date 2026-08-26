@@ -1,1 +1,1 @@
-# reactdjango package
+# bp_company package

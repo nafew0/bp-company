@@ -3,10 +3,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from subscriptions.models import SubscriptionEvent, UserSubscription
-from subscriptions.serializers import PlanSummarySerializer
-from subscriptions.services import LicenseService
-
 from .ai_secrets import get_ai_api_key_meta
 from .branding import (
     get_branding_asset_limits,
@@ -25,27 +21,7 @@ from .social_auth import get_social_provider_status
 User = get_user_model()
 
 
-class AdminSubscriptionSummarySerializer(serializers.ModelSerializer):
-    plan = PlanSummarySerializer(read_only=True)
-
-    class Meta:
-        model = UserSubscription
-        fields = [
-            "id",
-            "plan",
-            "status",
-            "billing_cycle",
-            "payment_provider",
-            "cancel_at_period_end",
-            "cancel_requested_at",
-            "current_period_start",
-            "current_period_end",
-        ]
-
-
 class AdminUserListSerializer(serializers.ModelSerializer):
-    current_plan = serializers.SerializerMethodField()
-
     class Meta:
         model = User
         fields = [
@@ -57,20 +33,12 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             "is_active",
             "is_superuser",
             "email_verified",
-            "current_plan",
             "created_at",
             "last_login",
         ]
 
-    def get_current_plan(self, obj):
-        subscription = getattr(obj, "subscription", None)
-        plan = subscription.plan if subscription else LicenseService.get_free_plan()
-        return PlanSummarySerializer(plan).data
-
 
 class AdminUserDetailSerializer(serializers.ModelSerializer):
-    subscription = serializers.SerializerMethodField()
-
     class Meta:
         model = User
         fields = [
@@ -89,36 +57,11 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
             "email_verified",
             "created_at",
             "last_login",
-            "subscription",
         ]
-
-    def get_subscription(self, obj):
-        subscription = getattr(obj, "subscription", None) or LicenseService.get_user_subscription(
-            obj
-        )
-        return AdminSubscriptionSummarySerializer(subscription).data
 
 
 class AdminUserUpdateSerializer(serializers.Serializer):
     is_active = serializers.BooleanField(required=False)
-    plan_id = serializers.UUIDField(required=False)
-
-
-class SubscriptionEventSerializer(serializers.ModelSerializer):
-    plan = PlanSummarySerializer(read_only=True)
-
-    class Meta:
-        model = SubscriptionEvent
-        fields = [
-            "id",
-            "event_type",
-            "plan",
-            "status",
-            "payment_provider",
-            "billing_cycle",
-            "metadata",
-            "created_at",
-        ]
 
 
 class SiteSettingsAdminSerializer(serializers.ModelSerializer):

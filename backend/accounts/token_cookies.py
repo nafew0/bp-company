@@ -2,7 +2,7 @@ from django.conf import settings
 
 
 def get_refresh_cookie_name():
-    return getattr(settings, "AUTH_REFRESH_COOKIE_NAME", "reactdjango_refresh")
+    return getattr(settings, "AUTH_REFRESH_COOKIE_NAME", "bp_company_refresh")
 
 
 def get_refresh_token_from_request(request):

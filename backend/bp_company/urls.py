@@ -1,5 +1,5 @@
 """
-URL configuration for reactdjango project.
+URL configuration for the bp_company project.
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -10,7 +10,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/admin/", include("accounts.admin_urls")),
-    path("api/", include("subscriptions.urls")),
     # Add your app URLs here:
     # path("api/", include("myapp.urls")),
 ]

@@ -1,12 +1,8 @@
 from django.urls import path
 
 from .admin_views import (
-    AdminBkashPaymentSearchView,
-    AdminBkashRefundView,
     AdminDashboardView,
     AdminGateView,
-    AdminPaymentsExportView,
-    AdminPaymentsView,
     AdminSendPasswordResetView,
     AdminSettingsTestAIView,
     AdminSettingsView,
@@ -25,18 +21,6 @@ urlpatterns = [
         "users/<uuid:user_id>/send-password-reset/",
         AdminSendPasswordResetView.as_view(),
         name="user-send-password-reset",
-    ),
-    path("payments/", AdminPaymentsView.as_view(), name="payments"),
-    path("payments/export/", AdminPaymentsExportView.as_view(), name="payments-export"),
-    path(
-        "payments/bkash/search/",
-        AdminBkashPaymentSearchView.as_view(),
-        name="payments-bkash-search",
-    ),
-    path(
-        "payments/bkash/<str:payment_id>/refund/",
-        AdminBkashRefundView.as_view(),
-        name="payments-bkash-refund",
     ),
     path("settings/", AdminSettingsView.as_view(), name="settings"),
     path("settings/test-ai/", AdminSettingsTestAIView.as_view(), name="settings-test-ai"),
