@@ -17,7 +17,6 @@ declare module 'axios' {
 let inMemoryAccessToken = ''
 const AUTH_REFRESH_EXCLUDED_PATHS = [
   '/auth/login/',
-  '/auth/register/',
   '/auth/social/',
   '/auth/token/refresh/',
   '/auth/password-reset/',

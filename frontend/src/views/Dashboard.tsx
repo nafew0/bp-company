@@ -1,11 +1,14 @@
 'use client'
+import Link from 'next/link'
+import { ShieldCheck, UserRound } from 'lucide-react'
+
 import { useAuth } from '@/contexts/AuthContext'
+import useAdminAccess from '@/hooks/useAdminAccess'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import PlanBadge from '@/components/subscription/PlanBadge'
-import UsageBanner from '@/components/subscription/UsageBanner'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { canAccessAdmin } = useAdminAccess()
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
@@ -16,43 +19,38 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <UsageBanner />
+      <div className="grid gap-4 md:grid-cols-2">
+        {canAccessAdmin ? (
+          <Link href="/admin" className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <Card className="h-full transition hover:border-primary/40 hover:shadow-md">
+              <CardHeader>
+                <CardDescription className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  Administration
+                </CardDescription>
+                <CardTitle>Admin panel</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Manage users and platform settings.
+              </CardContent>
+            </Card>
+          </Link>
+        ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardDescription>Current plan</CardDescription>
-            <CardTitle className="flex items-center gap-2">
-              <PlanBadge plan={user?.current_plan} />
-              {user?.current_plan?.name || 'Free'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Manage your subscription from the Pricing page.
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription>Account status</CardDescription>
-            <CardTitle>{user?.email_verified ? 'Verified' : 'Unverified'}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {user?.email_verified
-              ? 'Your email address has been verified.'
-              : 'Please check your inbox for a verification email.'}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription>Get started</CardDescription>
-            <CardTitle>Build your app</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            This is a placeholder dashboard. Replace this page with your own app content.
-          </CardContent>
-        </Card>
+        <Link href="/profile" className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Card className="h-full transition hover:border-primary/40 hover:shadow-md">
+            <CardHeader>
+              <CardDescription className="flex items-center gap-2">
+                <UserRound className="h-4 w-4" />
+                Account
+              </CardDescription>
+              <CardTitle>Your profile</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Update your contact details and profile photo.
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )

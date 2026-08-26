@@ -25,17 +25,14 @@ type BrandingField =
   | 'branding_logo'
   | 'branding_favicon'
   | 'branding_login_banner'
-  | 'branding_register_banner'
 type BrandingUrlKey =
   | 'branding_logo_url'
   | 'branding_favicon_url'
   | 'branding_login_banner_url'
-  | 'branding_register_banner_url'
 type BrandingCustomizedKey =
   | 'branding_logo_customized'
   | 'branding_favicon_customized'
   | 'branding_login_banner_customized'
-  | 'branding_register_banner_customized'
 
 interface FormState {
   require_email_verification: boolean
@@ -107,24 +104,12 @@ const BRANDING_ASSET_CONFIG: Array<{
       'overflow-hidden rounded-[1.15rem] border border-[rgb(var(--theme-border-rgb)/0.72)] bg-[rgb(var(--theme-neutral-rgb)/0.42)]',
     previewImageClassName: 'h-40 w-full object-cover',
   },
-  {
-    field: 'branding_register_banner',
-    urlKey: 'branding_register_banner_url',
-    customizedKey: 'branding_register_banner_customized',
-    title: 'Registration banner',
-    description: 'Shown on the left side of the registration screen on large layouts.',
-    accept: 'image/png,image/jpeg,image/webp',
-    previewShellClassName:
-      'overflow-hidden rounded-[1.15rem] border border-[rgb(var(--theme-border-rgb)/0.72)] bg-[rgb(var(--theme-neutral-rgb)/0.42)]',
-    previewImageClassName: 'h-40 w-full object-cover',
-  },
 ]
 
 const DEFAULT_BRANDING_PREVIEW_URLS: Record<BrandingField, string> = {
   branding_logo: '/branding/logo.svg',
   branding_favicon: '/branding/logo.ico',
   branding_login_banner: '/branding/loginpage.webp',
-  branding_register_banner: '/branding/registerpage.webp',
 }
 
 function createEmptyBrandingFiles(): BrandingFileState {
@@ -132,7 +117,6 @@ function createEmptyBrandingFiles(): BrandingFileState {
     branding_logo: null,
     branding_favicon: null,
     branding_login_banner: null,
-    branding_register_banner: null,
   }
 }
 
@@ -141,7 +125,6 @@ function createEmptyBrandingClears(): BrandingClearState {
     branding_logo: false,
     branding_favicon: false,
     branding_login_banner: false,
-    branding_register_banner: false,
   }
 }
 

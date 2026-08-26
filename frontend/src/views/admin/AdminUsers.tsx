@@ -24,7 +24,6 @@ interface UserRow {
   id: string
   username: string
   email: string
-  current_plan?: { name: string }
   is_active: boolean
   created_at: string
 }
@@ -60,7 +59,6 @@ export default function AdminUsers() {
       return {
         page: next.get('page') || '1',
         search: next.get('search') || '',
-        plan: next.get('plan') || '',
         is_active: next.get('is_active') || '',
         ordering: next.get('ordering') || '-created_at',
       }
@@ -86,11 +84,6 @@ export default function AdminUsers() {
         ),
       },
       {
-        accessorKey: 'current_plan',
-        header: 'Plan',
-        cell: ({ row }) => <Badge variant="outline">{row.original.current_plan?.name || 'Free'}</Badge>,
-      },
-      {
         accessorKey: 'is_active',
         header: 'Status',
         cell: ({ row }) => (
@@ -114,11 +107,6 @@ export default function AdminUsers() {
     getCoreRowModel: getCoreRowModel(),
   })
 
-  const planOptions = [
-    { label: 'All plans', value: '' },
-    ...((data?.plans || []).map((plan: { name: string; slug: string }) => ({ label: plan.name, value: plan.slug }))),
-  ]
-
   if (isLoading) {
     return <div className="theme-panel rounded-[1.8rem] p-6 text-sm text-muted-foreground">Loading users...</div>
   }
@@ -137,18 +125,13 @@ export default function AdminUsers() {
           <CardTitle>Users</CardTitle>
           <CardDescription>Search, filter, and inspect reactdjango accounts.</CardDescription>
         </div>
-        <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(3,minmax(0,0.8fr))]">
+        <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(2,minmax(0,0.8fr))]">
           <Input
             placeholder="Search username or email"
             value={params.search}
             onChange={(event) =>
               updateSearchParams(searchParamString, { search: event.target.value }, router, pathname)
             }
-          />
-          <CustomSelect
-            value={params.plan}
-            onChange={(value) => updateSearchParams(searchParamString, { plan: String(value) }, router, pathname)}
-            options={planOptions}
           />
           <CustomSelect
             value={params.is_active}

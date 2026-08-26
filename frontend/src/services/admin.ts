@@ -82,7 +82,15 @@ export async function resolveAdminGateAccess(userId: string) {
   return request
 }
 
-export async function getAdminDashboard() {
+export interface AdminDashboardResponse {
+  total_users: number
+  active_users: number
+  staff_users: number
+  new_users_this_week: number
+  new_users_this_month: number
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboardResponse> {
   const response = await api.get('/admin/dashboard/')
   return response.data
 }
@@ -109,30 +117,6 @@ export async function deleteAdminUser(userId: string) {
 
 export async function sendAdminPasswordReset(userId: string) {
   const response = await api.post(`/admin/users/${userId}/send-password-reset/`)
-  return response.data
-}
-
-export async function getAdminPayments(params: Record<string, string> = {}) {
-  const response = await api.get(`/admin/payments/?${buildParams(params).toString()}`)
-  return response.data
-}
-
-export async function exportAdminPayments(params: Record<string, string> = {}) {
-  const response = await api.get(`/admin/payments/export/?${buildParams(params).toString()}`, {
-    responseType: 'blob',
-  })
-  return response.data
-}
-
-export async function searchAdminBkashTransaction(trxId: string) {
-  const response = await api.get(
-    `/admin/payments/bkash/search/?${buildParams({ trx_id: trxId }).toString()}`
-  )
-  return response.data
-}
-
-export async function refundAdminBkashPayment(paymentId: string, payload: Record<string, unknown>) {
-  const response = await api.post(`/admin/payments/bkash/${paymentId}/refund/`, payload)
   return response.data
 }
 

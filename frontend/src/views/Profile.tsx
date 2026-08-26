@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import {
   BriefcaseBusiness,
   Building2,
@@ -15,12 +14,6 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { resolveApiAssetUrl } from '@/services/api'
-import {
-  createBkashCheckoutSession,
-  createStripeCustomerPortalSession,
-} from '@/services/payments'
-import { cancelSubscription, getSubscription } from '@/services/subscriptions'
-import PlanBadge from '@/components/subscription/PlanBadge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -45,8 +38,6 @@ interface UserData {
   username?: string
   avatar?: string
   created_at?: string
-  subscription?: { plan?: { slug?: string; name?: string; id?: string }; billing_cycle?: string; current_period_end?: string; cancel_at_period_end?: boolean; payment_provider?: string }
-  current_plan?: { name?: string; slug?: string; tier?: number }
 }
 
 interface FormData {
@@ -78,13 +69,6 @@ function formatMemberSince(value: string | undefined) {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function formatBillingDate(value: string | undefined) {
-  if (!value) return 'Not scheduled'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Not scheduled'
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
 function getInitials(user: UserData | null, formData: FormData) {
   const first = (formData.first_name || user?.first_name || '').trim()
   const last = (formData.last_name || user?.last_name || '').trim()
@@ -104,11 +88,6 @@ const Profile = () => {
   const [formData, setFormData] = useState<FormData>(() => buildFormState(user))
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [openingBilling, setOpeningBilling] = useState(false)
-  const [loadingSubscription, setLoadingSubscription] = useState(true)
-  const [subscription, setSubscription] = useState<Record<string, unknown> | null>(null)
-  const [renewingBkash, setRenewingBkash] = useState(false)
-  const [cancelingSubscription, setCancelingSubscription] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState('')
 
   useEffect(() => {
@@ -118,46 +97,7 @@ const Profile = () => {
     setAvatarPreview(resolveApiAssetUrl(user?.avatar))
   }, [user])
 
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSubscription(null)
-      setLoadingSubscription(false)
-      return undefined
-    }
-
-    const loadSubscription = async () => {
-      setLoadingSubscription(true)
-      try {
-        const response = await getSubscription()
-        if (!cancelled) setSubscription(response)
-      } catch (error: unknown) {
-        const axiosError = error as { response?: { data?: { detail?: string } } }
-        if (!cancelled) {
-          setSubscription(null)
-          toast({
-            title: 'Subscription details unavailable',
-            description: axiosError.response?.data?.detail || 'reactdjango could not load your current subscription right now.',
-            variant: 'warning',
-            duration: 4000,
-          })
-        }
-      } finally {
-        if (!cancelled) setLoadingSubscription(false)
-      }
-    }
-
-    loadSubscription()
-    return () => { cancelled = true }
-  }, [toast, user])
-
   const displayName = `${formData.first_name} ${formData.last_name}`.trim() || user?.username || 'Your profile'
-  const currentPlan = (subscription as Record<string, unknown>)?.plan as Record<string, unknown> | undefined || user?.current_plan || { name: 'Free', slug: 'free', tier: 0 }
-  const billingProvider = (subscription as Record<string, unknown>)?.payment_provider as string || 'none'
-  const isStripeSubscription = billingProvider === 'stripe' && (currentPlan as Record<string, unknown>)?.slug && (currentPlan as Record<string, unknown>).slug !== 'free'
-  const isBkashSubscription = billingProvider === 'bkash' && (currentPlan as Record<string, unknown>)?.slug && (currentPlan as Record<string, unknown>).slug !== 'free'
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target
@@ -219,49 +159,6 @@ const Profile = () => {
     event.target.value = ''
   }
 
-  const handleManageBilling = async () => {
-    setOpeningBilling(true)
-    try {
-      const response = await createStripeCustomerPortalSession()
-      window.location.assign(response.portal_url)
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { detail?: string } } }
-      toast({ title: 'Billing portal unavailable', description: axiosError.response?.data?.detail || 'Stripe billing is not available for this account yet.', variant: 'error', duration: 4500 })
-      setOpeningBilling(false)
-    }
-  }
-
-  const handleBkashRenewal = async () => {
-    const sub = subscription as Record<string, unknown>
-    if (!sub?.plan || !(sub.plan as Record<string, unknown>)?.id || !sub?.billing_cycle) return
-    setRenewingBkash(true)
-    try {
-      const response = await createBkashCheckoutSession({
-        planId: (sub.plan as Record<string, unknown>).id as string,
-        billingCycle: sub.billing_cycle as string,
-      })
-      window.location.assign(response.bkash_url)
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { detail?: string } } }
-      toast({ title: 'Renewal unavailable', description: axiosError.response?.data?.detail || 'reactdjango could not start the bKash renewal flow right now.', variant: 'error', duration: 4500 })
-      setRenewingBkash(false)
-    }
-  }
-
-  const handleCancelSubscription = async () => {
-    setCancelingSubscription(true)
-    try {
-      const updatedSubscription = await cancelSubscription()
-      setSubscription(updatedSubscription)
-      toast({ title: 'Cancellation scheduled', description: 'Your bKash subscription will end after the current billing period.', variant: 'success' })
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { detail?: string } } }
-      toast({ title: 'Could not schedule cancellation', description: axiosError.response?.data?.detail || 'reactdjango could not update the subscription right now.', variant: 'error', duration: 4500 })
-    } finally {
-      setCancelingSubscription(false)
-    }
-  }
-
   const profileFields = [
     { id: 'first_name', label: 'First Name', icon: UserRound, placeholder: 'First name', autoComplete: 'given-name' },
     { id: 'last_name', label: 'Last Name', icon: UserRound, placeholder: 'Last name', autoComplete: 'family-name' },
@@ -270,8 +167,6 @@ const Profile = () => {
     { id: 'organization', label: 'Organization', icon: Building2, placeholder: 'reactdjango Labs', autoComplete: 'organization' },
     { id: 'designation', label: 'Designation', icon: BriefcaseBusiness, placeholder: 'Research Lead', autoComplete: 'organization-title' },
   ]
-
-  const sub = subscription as Record<string, unknown>
 
   return (
     <div className="theme-app-gradient min-h-[calc(100vh-4rem)] px-4 py-8 sm:px-6 lg:px-8">
@@ -327,42 +222,6 @@ const Profile = () => {
               </div>
 
               <div className="grid gap-3">
-                <div className="theme-panel-soft flex items-center justify-between px-4 py-3">
-                  <span className="text-sm font-medium text-muted-foreground">Current plan</span>
-                  <PlanBadge plan={currentPlan} />
-                </div>
-                <div className="theme-panel-soft flex items-center gap-3 px-4 py-3">
-                  <span className="theme-icon-secondary inline-flex h-10 w-10 items-center justify-center rounded-full">
-                    <CalendarDays className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Next billing date</p>
-                    <p className="text-sm font-medium">
-                      {loadingSubscription ? 'Loading...' : formatBillingDate(sub?.current_period_end as string | undefined)}
-                    </p>
-                    {sub?.cancel_at_period_end ? (
-                      <p className="mt-1 text-xs text-amber-700">Cancellation scheduled at period end.</p>
-                    ) : null}
-                  </div>
-                </div>
-                <Button asChild variant="outline" className="rounded-full">
-                  <Link href="/pricing">Manage plan</Link>
-                </Button>
-                {isStripeSubscription ? (
-                  <Button type="button" variant="outline" className="rounded-full" disabled={openingBilling} onClick={handleManageBilling}>
-                    {openingBilling ? 'Opening billing...' : 'Manage billing'}
-                  </Button>
-                ) : null}
-                {isBkashSubscription ? (
-                  <>
-                    <Button type="button" variant="outline" className="rounded-full" disabled={renewingBkash || Boolean(sub?.cancel_at_period_end)} onClick={handleBkashRenewal}>
-                      {renewingBkash ? 'Opening bKash...' : 'Renew now'}
-                    </Button>
-                    <Button type="button" variant="outline" className="rounded-full" disabled={cancelingSubscription || Boolean(sub?.cancel_at_period_end)} onClick={handleCancelSubscription}>
-                      {cancelingSubscription ? 'Scheduling cancellation...' : sub?.cancel_at_period_end ? 'Cancellation scheduled' : 'Cancel at period end'}
-                    </Button>
-                  </>
-                ) : null}
                 <div className="theme-panel-soft flex items-center gap-3 px-4 py-3">
                   <span className="theme-icon-secondary inline-flex h-10 w-10 items-center justify-center rounded-full">
                     <CalendarDays className="h-4 w-4" />
@@ -383,7 +242,7 @@ const Profile = () => {
           <Card className="theme-panel border-0">
             <CardHeader className="pb-4">
               <CardTitle>Account details</CardTitle>
-              <CardDescription>These details appear across your workspace and future billing flows.</CardDescription>
+              <CardDescription>These details appear across your workspace.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">

@@ -1,14 +1,5 @@
 import api from './api'
 
-export async function getSignupChallenge() {
-  const response = await api.get('/auth/register/captcha/', {
-    params: { _: Date.now() },
-    skipAuthRefresh: true,
-    preserveAuthError: true,
-  })
-  return response.data
-}
-
 export async function getSocialProviders() {
   const response = await api.get('/auth/social/providers/', {
     params: { _: Date.now() },

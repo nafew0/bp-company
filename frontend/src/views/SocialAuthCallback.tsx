@@ -105,9 +105,6 @@ export default function SocialAuthCallback() {
             <Button asChild className="flex-1">
               <Link href="/login">Back to sign in</Link>
             </Button>
-            <Button asChild variant="outline" className="flex-1">
-              <Link href="/register">Open registration</Link>
-            </Button>
           </div>
         </div>
       </AuthShell>
@@ -132,9 +129,6 @@ export default function SocialAuthCallback() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button asChild className="flex-1">
             <Link href="/login">Back to sign in</Link>
-          </Button>
-          <Button asChild variant="outline" className="flex-1">
-            <Link href="/register">Create account</Link>
           </Button>
         </div>
       </div>

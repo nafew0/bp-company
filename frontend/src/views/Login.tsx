@@ -252,13 +252,7 @@ const Login = () => {
                 </div>
 
                 <p className="mt-6 text-center text-sm text-muted-foreground">
-                  Don&apos;t have an account?{' '}
-                  <Link
-                    href="/register"
-                    className="font-semibold text-primary transition hover:text-primary/80"
-                  >
-                    Create one
-                  </Link>
+                  Accounts are provisioned by an administrator.
                 </p>
               </div>
             </section>

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ClipboardList, CreditCard, Star, User, LogOut, LayoutDashboard, Settings, ShieldCheck } from "lucide-react"
+import { User, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react"
 import BrandLogo from '@/components/branding/BrandLogo'
 import ThemeStudioDialog from '@/components/theme/ThemeStudioDialog'
 import useAdminAccess from '@/hooks/useAdminAccess'
@@ -22,10 +22,6 @@ const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth()
   const { canAccessAdmin } = useAdminAccess()
   const router = useRouter()
-  const currentPlanSlug = (user?.current_plan?.slug || 'free').toLowerCase()
-  const currentPlanTier = Number(user?.current_plan?.tier || 0)
-  const isUpgraded =
-    currentPlanTier > 0 || (currentPlanSlug !== '' && currentPlanSlug !== 'free')
 
   const handleLogout = async () => {
     await logout()
@@ -50,14 +46,6 @@ const Navbar = () => {
           <div className="hidden flex-1 lg:block" />
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <Link href="/pricing">
-                <Button variant="ghost" className="rounded-full gap-2">
-                  {isUpgraded ? <Star className="h-4 w-4 text-[rgb(var(--theme-primary-rgb))]" /> : null}
-                  {isUpgraded ? 'Pro' : 'Upgrade'}
-                </Button>
-              </Link>
-            </div>
             <div className="hidden md:block">
               <ThemeStudioDialog />
             </div>
@@ -89,10 +77,6 @@ const Navbar = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                      <ClipboardList className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       <span>Dashboard</span>
                     </DropdownMenuItem>
@@ -100,20 +84,12 @@ const Navbar = () => {
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/pricing')}>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      <span>Upgrade</span>
-                    </DropdownMenuItem>
                     {canAccessAdmin ? (
                       <DropdownMenuItem onClick={() => router.push('/admin')}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
                         <span>Admin Panel</span>
                       </DropdownMenuItem>
                     ) : null}
-                    <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -123,14 +99,9 @@ const Navbar = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" className="rounded-full">Log in</Button>
-                </Link>
-                <Link href="/register">
-                  <Button className="rounded-full">Start free</Button>
-                </Link>
-              </>
+              <Link href="/login">
+                <Button variant="ghost" className="rounded-full">Log in</Button>
+              </Link>
             )}
           </div>
         </div>

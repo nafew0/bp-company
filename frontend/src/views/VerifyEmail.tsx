@@ -104,14 +104,9 @@ const VerifyEmail = () => {
               <Link href="/login">Go to login</Link>
             </Button>
           ) : (
-            <>
-              <Button asChild className="rounded-full">
-                <Link href="/login">Back to login</Link>
-              </Button>
-              <Button asChild variant="secondary" className="rounded-full">
-                <Link href="/register">Create account again</Link>
-              </Button>
-            </>
+            <Button asChild className="rounded-full">
+              <Link href="/login">Back to login</Link>
+            </Button>
           )}
         </CardContent>
       </Card>

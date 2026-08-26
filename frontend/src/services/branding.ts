@@ -4,7 +4,6 @@ export interface PublicBrandingResponse {
   branding_logo_url?: string
   branding_favicon_url?: string
   branding_login_banner_url?: string
-  branding_register_banner_url?: string
 }
 
 export async function getPublicBranding() {

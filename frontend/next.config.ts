@@ -10,12 +10,12 @@ if (!isDevelopment && !rawBackendUrl) {
 const backendUrl = (rawBackendUrl || 'http://localhost:8000').replace(/\/+$/, '')
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://js.stripe.com${isDevelopment ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  `connect-src 'self' https://api.stripe.com https://r.stripe.com${isDevelopment ? ' ws: wss:' : ''}`,
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+  `connect-src 'self'${isDevelopment ? ' ws: wss:' : ''}`,
+  "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

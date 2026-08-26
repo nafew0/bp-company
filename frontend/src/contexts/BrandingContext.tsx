@@ -9,14 +9,12 @@ interface BrandingContextValue {
   logoUrl: string
   faviconUrl: string
   loginBannerUrl: string
-  registerBannerUrl: string
 }
 
 const DEFAULT_BRANDING = {
   logoUrl: '/branding/logo.svg',
   faviconUrl: '/branding/logo.ico',
   loginBannerUrl: '/branding/loginpage.webp',
-  registerBannerUrl: '/branding/registerpage.webp',
 }
 
 const BrandingContext = createContext<BrandingContextValue>(DEFAULT_BRANDING)
@@ -53,10 +51,6 @@ function buildBrandingValue(data: PublicBrandingResponse | undefined): BrandingC
     loginBannerUrl: resolveBrandingValue(
       data?.branding_login_banner_url,
       DEFAULT_BRANDING.loginBannerUrl
-    ),
-    registerBannerUrl: resolveBrandingValue(
-      data?.branding_register_banner_url,
-      DEFAULT_BRANDING.registerBannerUrl
     ),
   }
 }
