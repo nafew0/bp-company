@@ -21,6 +21,7 @@ env:
   API_ORIGIN: http://localhost:8000
   BACKEND_URL: http://localhost:8000
   NEXT_PUBLIC_API_URL: /api
+  NEXT_PUBLIC_ENABLE_STYLEGUIDE: "1"
 
 jobs:
   backend:

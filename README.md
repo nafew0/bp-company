@@ -9,7 +9,7 @@ A reusable **Django 5.2 + Next.js 16** boilerplate for building service-provider
 | Area | Status |
 |---|---|
 | BP-0 — SaaS-stripped foundation: JWT auth, staff accounts, custom React admin shell, Celery/Redis, email infra, Playwright + CI harness | ✅ this phase |
-| BP-1 — Theme token system (per-client re-theming) + UI primitives + styleguide | planned |
+| BP-1 — Theme token system (per-client re-theming) + UI primitives + styleguide | ✅ |
 | BP-2 — i18n infrastructure (next-intl, locale-routed public site, EN/BN example) | planned |
 | BP-3 — `content` app (SiteConfig, Services, Testimonials, FAQs, Team) + public shell + demo site | planned |
 | BP-4 — `leads` app: pipeline stages, capture API, attribution, notifications, WhatsApp, kanban admin | planned |
