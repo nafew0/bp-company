@@ -1,0 +1,12 @@
+# Sync Log — bp-company
+
+Ledger of generic-code propagation between `bp-company` (template) and `applelab` (client #1).
+See `SYNC_GATE.md` for the protocol. Statuses: `synced` / `PENDING` / `n/a`.
+A Sync Gate cannot pass while a `PENDING` row exists for the phase being closed.
+
+| Date | Phase | Commit(s) | Description | Class | Direction | Status |
+|------|-------|-----------|-------------|-------|-----------|--------|
+| 2026-08-27 | BP-0 | (baseline) | Pristine SaaS boilerplate import; applelab repo does not exist yet | generic | — | n/a |
+| 2026-08-27 | BP-0 | backend strip | Removed subscriptions app/Stripe/bKash; user-stats admin dashboard; bKash archived to contrib/payments; rename sweep; pytest 61 green | generic | — (no client repo yet; AL-0 clones from here) | n/a |
+| 2026-08-27 | BP-0 | frontend strip | Removed pricing/register/payments/subscription UI + Stripe CSP; placeholder Home; staff Dashboard; lint+build green | generic | — (no client repo yet) | n/a |
+| 2026-08-27 | BP-0 | harness | Playwright e2e (5 smoke specs), seed_e2e, CI workflows, sync protocol docs (SYNC_GATE, PR template), README/QUICKSTART rewrite | generic | — (no client repo yet) | n/a |

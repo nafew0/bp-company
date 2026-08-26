@@ -1,0 +1,31 @@
+# ⚠️ SYNC GATE — read before every phase, run before closing every phase
+
+This repo is half of a **two-repo system** (see `Master_Build_Plan.md`, the controlling document):
+
+- **`bp-company`** (this style of repo: the upstream template) — https://github.com/nafew0/bp-company.git
+- **`applelab`** (client build #1, derived from the template) — https://github.com/nafew0/applelab.git
+
+Remotes: each repo carries a remote pointing at the other (`template` in applelab, `applelab` in bp-company). Generic code keeps **identical paths** in both repos so propagation is a clean `git cherry-pick`.
+
+## Commit discipline
+
+- Never mix generic and client-specific changes in one commit.
+- Prefixes: `[generic]` (belongs in the template), `[applelab]` (client-only), `[sync]` (propagation commits), `[generic?]` (undecided — MUST be resolved at the gate).
+- Litmus test for gray areas: *"Would a printing / cleaning / dental service website also want this?"* If yes → `[generic]`.
+
+## The gate (all 7 steps, no exceptions, before a phase is "done")
+
+1. **Inventory** — `git log` the phase's commits; classify every commit.
+2. **Harvest** (client → template) — cherry-pick/copy every `[generic]` commit made in `applelab` into `bp-company` now. Template code must run under the neutral theme: no client strings, brand colors, or client model names.
+3. **Propagate** (template → client) — cherry-pick/copy every `[generic]` change made in `bp-company` into `applelab` now (once applelab exists).
+4. **Test both repos** — in each repo that received changes: `pytest` green, `npm run build` + lint green, relevant Playwright specs green, migrations apply on a fresh DB, seeds run.
+5. **Log** — update `SYNC_LOG.md` in **both** repos (mirrored entries). No `PENDING` rows may remain for the phase being closed.
+6. **Push both repos** — CI green on GitHub for both.
+7. Only then mark the phase complete.
+
+## Standing rules
+
+- Shared/generic code is edited **template-first** when the change is planned; harvest-after is only for genericity discovered mid-work.
+- **Never fork a generic file** — add config/override points in the template version instead.
+- Client extension points live in separate files/apps, never inline in generic modules.
+- Secrets never committed to either repo.
