@@ -10,13 +10,12 @@ test.describe('BP-2 i18n (locale routing, toggle, cookie, exclusions)', () => {
   test('bengali deep link renders translated copy with bn lang', async ({ page }) => {
     await page.goto('/bn')
     await expect(page.getByTestId('locale-frame')).toHaveAttribute('lang', 'bn')
-    await expect(page.getByText('সার্ভিস প্রোভাইডার ওয়েবসাইট টেমপ্লেট', { exact: false })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'লগইন' })).toBeVisible()
+    await expect(page.getByTestId('hero-headline')).toContainText('বিশ্বস্ত লোকাল সার্ভিস')
   })
 
   test('toggle switches locale, persists via cookie across visits', async ({ page }) => {
     await page.goto('/en')
-    await page.getByTestId('language-option-bn').click()
+    await page.getByTestId('navbar-desktop-actions').getByTestId('language-option-bn').click()
     await expect(page).toHaveURL(/\/bn$/)
     await expect(page.getByTestId('locale-frame')).toHaveAttribute('lang', 'bn')
 
@@ -29,13 +28,13 @@ test.describe('BP-2 i18n (locale routing, toggle, cookie, exclusions)', () => {
     await expect(page).toHaveURL(/\/bn$/)
 
     // and back to English
-    await page.getByTestId('language-option-en').click()
+    await page.getByTestId('navbar-desktop-actions').getByTestId('language-option-en').click()
     await expect(page).toHaveURL(/\/en$/)
   })
 
   test('toggle preserves the current path', async ({ page }) => {
     await page.goto('/en/styleguide')
-    await page.getByTestId('language-option-bn').click()
+    await page.getByTestId('navbar-desktop-actions').getByTestId('language-option-bn').click()
     await expect(page).toHaveURL(/\/bn\/styleguide$/)
     await expect(page.getByRole('heading', { name: 'BP-Company Styleguide' })).toBeVisible()
     // Bengali sample in the styleguide renders under the bn frame

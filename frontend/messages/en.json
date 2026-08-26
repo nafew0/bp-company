@@ -5,12 +5,64 @@
   },
   "nav": {
     "home": "Home",
+    "services": "Services",
+    "testimonials": "Reviews",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "cta": "Contact us",
     "login": "Login"
   },
-  "home": {
-    "title": "BP-Company",
-    "body": "Service-provider website template — public site arrives in Phase BP-3.",
-    "loginCta": "Login"
+  "hero": {
+    "eyebrow": "Welcome",
+    "headline": "Your trusted local service partner.",
+    "subheadline": "Fast, honest and professional — we take care of it so you don't have to.",
+    "primaryCta": "Contact us",
+    "secondaryCta": "View services"
+  },
+  "sections": {
+    "services": {
+      "eyebrow": "What we do",
+      "headline": "Our services"
+    },
+    "testimonials": {
+      "eyebrow": "Customer stories",
+      "headline": "What customers say"
+    },
+    "faq": {
+      "eyebrow": "Good to know",
+      "headline": "Frequently asked questions"
+    },
+    "contact": {
+      "eyebrow": "Get in touch",
+      "headline": "Contact us"
+    }
+  },
+  "contact": {
+    "whatsapp": "Chat on WhatsApp",
+    "loadMap": "Click to load the map",
+    "mapTitle": "Our location on Google Maps",
+    "form": {
+      "name": "Your name",
+      "phone": "Phone number",
+      "email": "Email",
+      "emailHint": "Optional — for a written reply.",
+      "message": "How can we help?",
+      "submit": "Send message",
+      "sending": "Sending…",
+      "successTitle": "Message sent!",
+      "successBody": "Thanks for reaching out — we will get back to you shortly.",
+      "submitError": "Something went wrong. Please try again or call us directly.",
+      "errors": {
+        "required": "This field is required."
+      }
+    }
+  },
+  "footer": {
+    "quickLinks": "Quick links",
+    "services": "Services",
+    "contact": "Contact",
+    "follow": "Follow us",
+    "rights": "All rights reserved."
   },
   "languageToggle": {
     "ariaLabel": "Change language"

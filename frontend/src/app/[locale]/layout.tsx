@@ -1,8 +1,11 @@
 import { hasLocale, NextIntlClientProvider } from 'next-intl'
-import { getMessages, setRequestLocale } from 'next-intl/server'
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 
 import LocaleFrame from '@/components/site/LocaleFrame'
+import SiteFooter from '@/components/site/SiteFooter'
+import SiteNavbar from '@/components/site/SiteNavbar'
+import { getServices, getSiteConfig } from '@/lib/content'
 import { routing } from '@/i18n/routing'
 import type { AppLocale } from '@/i18n/config'
 
@@ -22,11 +25,47 @@ export default async function LocaleLayout({
     notFound()
   }
   setRequestLocale(locale)
-  const messages = await getMessages()
+  const [messages, t, config, services] = await Promise.all([
+    getMessages(),
+    getTranslations({ locale, namespace: 'nav' }),
+    getSiteConfig(locale),
+    getServices(locale),
+  ])
+  const tFooter = await getTranslations({ locale, namespace: 'footer' })
+
+  const siteName = config?.site_name || 'BP-Company'
+  const navLinks = [
+    { href: '/#services', label: t('services') },
+    { href: '/#testimonials', label: t('testimonials') },
+    { href: '/#faq', label: t('faq') },
+    { href: '/#contact', label: t('contact') },
+  ]
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <LocaleFrame locale={locale as AppLocale}>{children}</LocaleFrame>
+      <LocaleFrame locale={locale as AppLocale}>
+        <SiteNavbar
+          siteName={siteName}
+          links={navLinks}
+          cta={{ href: '/#contact', label: t('cta') }}
+        />
+        {children}
+        <SiteFooter
+          config={config}
+          quickLinks={navLinks.map((link) => ({ ...link }))}
+          serviceLinks={services.slice(0, 6).map((service) => ({
+            href: '/#services',
+            label: service.name,
+          }))}
+          labels={{
+            quickLinks: tFooter('quickLinks'),
+            services: tFooter('services'),
+            contact: tFooter('contact'),
+            follow: tFooter('follow'),
+            rights: tFooter('rights'),
+          }}
+        />
+      </LocaleFrame>
     </NextIntlClientProvider>
   )
 }

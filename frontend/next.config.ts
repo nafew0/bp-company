@@ -18,7 +18,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   `connect-src 'self'${isDevelopment ? ' ws: wss:' : ''}`,
-  "frame-src 'self'",
+  // Google Maps click-to-load embed (BP-3 contact section)
+  "frame-src 'self' https://www.google.com https://maps.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
