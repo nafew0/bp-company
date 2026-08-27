@@ -3,6 +3,7 @@
 Idempotent: uses update_or_create on natural keys, so running it repeatedly
 never duplicates rows.
 """
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from content.models import FAQItem, Service, SiteConfig, TeamMember, Testimonial
@@ -329,6 +330,105 @@ TEAM = [
 ]
 
 
+DEMO_LEADS = [
+    {
+        "reference": "LD-DEMO-0001",
+        "name": "Kamrul Hasan",
+        "phone": "01712-345001",
+        "email": "kamrul@example.net",
+        "message": "My laptop fan is very loud, can you check it?",
+        "service": "general-repairs",
+        "stage": "new",
+        "source": "homepage-hero",
+        "attribution": {"utm_source": "facebook", "utm_medium": "cpc"},
+        "custom_fields": {"device": "Laptop", "brand": "Lenovo"},
+        "activities": [("note", "Customer prefers a call after 6pm.")],
+    },
+    {
+        "reference": "LD-DEMO-0002",
+        "name": "Sharmin Akter",
+        "phone": "+8801812345002",
+        "email": "sharmin@example.net",
+        "message": "Need a pickup from Dhanmondi for a broken blender.",
+        "service": "pickup-delivery",
+        "stage": "contacted",
+        "source": "services-page",
+        "attribution": {"utm_source": "google", "gclid": "demo-gclid-0002"},
+        "activities": [("call", "Called and confirmed the pickup address.")],
+    },
+    {
+        "reference": "LD-DEMO-0003",
+        "name": "Rasel Mia",
+        "phone": "01913345003",
+        "email": "",
+        "message": "How much for an express screen replacement?",
+        "service": "express-service",
+        "stage": "qualified",
+        "source": "whatsapp-funnel",
+        "custom_fields": {"budget": "5000", "urgency": "today"},
+        "activities": [("whatsapp_click", "WhatsApp opened")],
+    },
+    {
+        "reference": "LD-DEMO-0004",
+        "name": "Nasrin Sultana",
+        "phone": "01614345004",
+        "email": "nasrin@example.net",
+        "message": "Booked for Saturday morning, please confirm.",
+        "service": "warranty-service",
+        "stage": "booked",
+        "source": "contact-form",
+    },
+    {
+        "reference": "LD-DEMO-0005",
+        "name": "Arif Chowdhury",
+        "phone": "01715345005",
+        "email": "arif@example.net",
+        "message": "Parts replacement for my printer.",
+        "service": "parts-replacement",
+        "stage": "won",
+        "source": "referral",
+        "attribution": {"utm_source": "google", "utm_campaign": "brand"},
+    },
+    {
+        "reference": "LD-DEMO-0006",
+        "name": "Tania Rahman",
+        "phone": "01816345006",
+        "email": "",
+        "message": "Asked about a full appliance overhaul.",
+        "service": "expert-consultation",
+        "stage": "lost",
+        "lost_reason": "Went with a cheaper competitor.",
+        "source": "facebook-ads",
+        "attribution": {"utm_source": "facebook", "fbclid": "demo-fbclid-0006"},
+    },
+    {
+        "reference": "LD-DEMO-0007",
+        "name": "Mahmudul Karim",
+        "phone": "01917345007",
+        "email": "mahmud@example.net",
+        "message": "আমার ফ্রিজ ঠান্ডা হচ্ছে না, দ্রুত সাহায্য দরকার।",
+        "service": "general-repairs",
+        "stage": "new",
+        "source": "homepage-hero",
+        "lang": "bn",
+    },
+    {
+        "reference": "LD-DEMO-0008",
+        "name": "Sabbir Ahmed",
+        "phone": "01618345008",
+        "email": "sabbir@example.net",
+        "message": "Do you replace phone batteries while I wait?",
+        "service": "express-service",
+        "stage": "contacted",
+        "source": "faq-page",
+        "activities": [
+            ("note", "Battery model checked; part is in stock."),
+            ("whatsapp_click", "WhatsApp opened"),
+        ],
+    },
+]
+
+
 class Command(BaseCommand):
     help = "Seed demo CMS content for the Acme Services template (idempotent)."
 
@@ -376,4 +476,67 @@ class Command(BaseCommand):
             TeamMember.objects.update_or_create(name=name, defaults=data)
         self.stdout.write(f"Team members seeded: {len(TEAM)}")
 
+        self.seed_leads()
+
         self.stdout.write(self.style.SUCCESS("Demo content seeded (idempotent)."))
+
+    def seed_leads(self):
+        """Seed pipeline stages plus demo leads.
+
+        Leads are constructed directly (never through the capture endpoint)
+        so seeding sends no notifications, and fixed references keep the
+        whole block idempotent.
+        """
+        from leads.models import LeadActivity, PipelineStage, StageTransition
+        from leads.phones import normalize_phone
+
+        call_command("seed_pipeline")
+
+        from leads.models import Lead
+
+        new_stage = PipelineStage.objects.get(slug="new")
+        for data in DEMO_LEADS:
+            data = dict(data)
+            reference = data.pop("reference")
+            stage = PipelineStage.objects.get(slug=data.pop("stage"))
+            service = Service.objects.filter(slug=data.pop("service", "")).first()
+            activities = data.pop("activities", [])
+            lost_reason = data.pop("lost_reason", "")
+            phone = data.pop("phone")
+            lead, _ = Lead.objects.update_or_create(
+                reference=reference,
+                defaults={
+                    "name": data.pop("name"),
+                    "phone": phone,
+                    "phone_normalized": normalize_phone(phone),
+                    "email": data.pop("email", ""),
+                    "message": data.pop("message", ""),
+                    "service": service,
+                    "stage": stage,
+                    "source": data.pop("source", ""),
+                    "lang": data.pop("lang", "en"),
+                    "attribution": data.pop("attribution", {}),
+                    "custom_fields": data.pop("custom_fields", {}),
+                },
+            )
+            StageTransition.objects.get_or_create(
+                lead=lead,
+                from_stage=None,
+                to_stage=new_stage,
+                defaults={"changed_by": "system"},
+            )
+            if stage.pk != new_stage.pk:
+                StageTransition.objects.get_or_create(
+                    lead=lead,
+                    from_stage=new_stage,
+                    to_stage=stage,
+                    defaults={"changed_by": "demo", "reason": lost_reason},
+                )
+            for activity_type, body in activities:
+                LeadActivity.objects.get_or_create(
+                    lead=lead,
+                    type=activity_type,
+                    body=body,
+                    defaults={"actor": "demo"},
+                )
+        self.stdout.write(f"Demo leads seeded: {len(DEMO_LEADS)}")

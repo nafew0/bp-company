@@ -32,6 +32,7 @@ def valid_contact_payload(**overrides):
     return payload
 
 
+
 class SiteConfigSingletonTests(TestCase):
     def test_get_solo_creates_pk_1(self):
         config = SiteConfig.get_solo()
@@ -452,6 +453,15 @@ class ContactEndpointTests(APITestCase):
         self.assertEqual(response.json(), {"detail": "ok"})
 
     def test_throttle_sixth_request_429(self):
+        from unittest import mock
+        from rest_framework.throttling import SimpleRateThrottle
+
+        with mock.patch.dict(
+            SimpleRateThrottle.THROTTLE_RATES, {"contact": "5/hour"}
+        ):
+            self._run_throttle_scenario()
+
+    def _run_throttle_scenario(self):
         for _ in range(5):
             response = self.client.post(
                 CONTACT_URL, valid_contact_payload(), format="json"

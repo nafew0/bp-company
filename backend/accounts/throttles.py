@@ -150,7 +150,10 @@ class SocialLoginRateThrottle(VariableWindowRateThrottle):
 
 class AdminRateThrottle(VariableWindowRateThrottle):
     scope = "admin_api"
-    default_rate = "100/hour"
+    # Interactive admin screens (lead board, dashboards) make many small calls;
+    # override via ADMIN_API_THROTTLE_RATE when needed.
+    rate_setting = "ADMIN_API_THROTTLE_RATE"
+    default_rate = "1000/hour"
 
     def get_cache_key(self, request, view):
         if not request.user or not request.user.is_authenticated:

@@ -10,7 +10,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/admin/", include("accounts.admin_urls")),
+    path("api/admin/", include("leads.admin_urls")),
     path("api/content/", include("content.urls")),
+    path("api/leads/", include("leads.urls")),
     # Add your app URLs here:
     # path("api/", include("myapp.urls")),
 ]

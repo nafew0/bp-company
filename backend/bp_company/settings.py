@@ -160,6 +160,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "content",
+    "leads",
 ]
 
 MIDDLEWARE = [
@@ -262,9 +263,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_RATES": {
-        "contact": "5/hour",
+        # Public POST endpoints. Production defaults are strict; local dev/e2e
+        # may raise them via env (see .env.example).
+        "contact": os.environ.get("CONTACT_THROTTLE_RATE", "5/hour").strip() or "5/hour",
+        "lead_capture": os.environ.get("LEAD_CAPTURE_THROTTLE_RATE", "10/hour").strip() or "10/hour",
     },
 }
+
+# Leads / documents
+ADMIN_API_THROTTLE_RATE = os.environ.get("ADMIN_API_THROTTLE_RATE", "1000/hour").strip() or "1000/hour"
+LEADS_REFERENCE_PREFIX = os.environ.get("LEADS_REFERENCE_PREFIX", "LD").strip() or "LD"
 
 # Simple JWT
 SIMPLE_JWT = {
