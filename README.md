@@ -12,7 +12,7 @@ A reusable **Django 5.2 + Next.js 16** boilerplate for building service-provider
 | BP-1 — Theme token system (per-client re-theming) + UI primitives + styleguide | ✅ |
 | BP-2 — i18n infrastructure (next-intl, locale-routed public site, EN/BN example) | ✅ |
 | BP-3 — `content` app (SiteConfig, Services, Testimonials, FAQs, Team) + public shell + demo site | ✅ |
-| BP-4 — `leads` app: pipeline stages, capture API, attribution, notifications, WhatsApp, kanban admin | planned |
+| BP-4 — `leads` app: pipeline stages, capture API, attribution, notifications, WhatsApp, kanban admin | ✅ |
 | BP-5+ — funnel section kit, Meta Pixel/CAPI marketing module, drip sequences, booking-lite | planned |
 
 ## Stack

@@ -64,6 +64,47 @@
     "follow": "Follow us",
     "rights": "All rights reserved."
   },
+  "leadForm": {
+    "name": "Your name",
+    "phone": "Phone number",
+    "email": "Email",
+    "emailHint": "Optional — for a written reply.",
+    "service": "Service",
+    "servicePlaceholder": "Choose a service…",
+    "message": "Anything we should know?",
+    "consent": "You may contact me about offers and updates.",
+    "submit": "Get my free quote",
+    "sending": "Sending…",
+    "successTitle": "Request received!",
+    "successBody": "We will contact you shortly.",
+    "submitError": "Something went wrong. Please try again or call us directly.",
+    "errors": {
+      "required": "This field is required."
+    }
+  },
+  "funnel": {
+    "demo": {
+      "eyebrow": "Limited-time offer",
+      "headline": "Get your free quote today.",
+      "subheadline": "Tell us what you need — we reply within 2 hours, no obligation.",
+      "benefit1Title": "Free assessment",
+      "benefit1Body": "A clear, honest quote before any work starts.",
+      "benefit2Title": "2-hour response",
+      "benefit2Body": "We get back to you the same day, every day.",
+      "benefit3Title": "Satisfaction guaranteed",
+      "benefit3Body": "Professional work backed by our service guarantee.",
+      "formTitle": "Request your free quote",
+      "formSub": "It takes less than a minute.",
+      "trustNote": "No spam — we only use your details to respond to this request."
+    },
+    "thanks": {
+      "title": "Request received!",
+      "body": "Our team will contact you shortly. Keep your reference number handy:",
+      "whatsapp": "Chat with us on WhatsApp",
+      "whatsappPrefill": "Hello! I just submitted a request (ref {reference}).",
+      "backHome": "Back to home"
+    }
+  },
   "languageToggle": {
     "ariaLabel": "Change language"
   },

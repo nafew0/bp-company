@@ -13,13 +13,14 @@ export default function Container({
   width = 'wide',
   className,
   children,
+  ...rest
 }: {
   width?: ContainerWidth
   className?: string
   children: React.ReactNode
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('mx-auto w-full px-6 md:px-8', widthClass[width], className)}>
+    <div className={cn('mx-auto w-full px-6 md:px-8', widthClass[width], className)} {...rest}>
       {children}
     </div>
   )

@@ -2,6 +2,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 
+import AttributionTracker from '@/components/site/AttributionTracker'
 import LocaleFrame from '@/components/site/LocaleFrame'
 import SiteFooter from '@/components/site/SiteFooter'
 import SiteNavbar from '@/components/site/SiteNavbar'
@@ -44,6 +45,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <LocaleFrame locale={locale as AppLocale}>
+        <AttributionTracker />
         <SiteNavbar
           siteName={siteName}
           links={navLinks}
