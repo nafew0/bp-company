@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ArrowLeft,
+  Inbox,
+  KanbanSquare,
   LayoutDashboard,
   Settings2,
   ShieldCheck,
@@ -16,12 +18,17 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/leads', label: 'Leads', icon: Inbox },
+  { to: '/admin/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { to: '/admin/settings', label: 'Settings', icon: Settings2 },
 ]
 
 function getAdminTitle(pathname: string) {
   if (pathname.startsWith('/admin/users/')) return 'User detail'
   if (pathname.startsWith('/admin/users')) return 'User management'
+  if (pathname.startsWith('/admin/leads/')) return 'Lead detail'
+  if (pathname.startsWith('/admin/leads')) return 'Lead management'
+  if (pathname.startsWith('/admin/pipeline')) return 'Pipeline settings'
   if (pathname.startsWith('/admin/settings')) return 'Platform settings'
   return 'Admin overview'
 }
