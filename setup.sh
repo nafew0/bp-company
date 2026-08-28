@@ -155,7 +155,11 @@ echo
 # ------------------------------------------------- copy + rename + substitute
 info "Copying template files..."
 mkdir -p "$PROJECT_DIR"
-rsync -a \
+# Record exactly which files rsync writes: ONLY those get name substitution.
+# Pre-existing client files (docs, assets) in an overwritten directory are
+# never rewritten.
+TRANSFER_LIST="$(mktemp)"
+rsync -a --itemize-changes \
   --exclude '.git' \
   --exclude 'backend/venv' \
   --exclude 'backend/.env' \
@@ -169,17 +173,17 @@ rsync -a \
   --exclude '.DS_Store' \
   --exclude 'setup.sh' \
   --exclude 'SYNC_LOG.md' \
-  "$TEMPLATE_DIR/" "$PROJECT_DIR/"
+  "$TEMPLATE_DIR/" "$PROJECT_DIR/" \
+  | sed -nE 's/^>f[^ ]* //p' > "$TRANSFER_LIST"
 
-mv "$PROJECT_DIR/backend/bp_company" "$PROJECT_DIR/backend/$PROJECT_NAME"
-
-info "Substituting project names..."
-python3 - "$PROJECT_DIR" "$PROJECT_NAME" "$KEBAB_NAME" "$DISPLAY_NAME" <<'PY'
+info "Substituting project names (only in the $(wc -l < "$TRANSFER_LIST" | tr -d ' ') files the template wrote)..."
+python3 - "$PROJECT_DIR" "$PROJECT_NAME" "$KEBAB_NAME" "$DISPLAY_NAME" "$TRANSFER_LIST" <<'PY'
 from pathlib import Path
 import sys
 
 project_dir = Path(sys.argv[1])
 snake, kebab, display = sys.argv[2], sys.argv[3], sys.argv[4]
+transfer_list = Path(sys.argv[5])
 
 ALLOWED = {".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".html", ".md", ".mjs",
            ".cjs", ".sh", ".cmd", ".env", ".yml", ".yaml", ".ini", ".cfg",
@@ -188,7 +192,11 @@ ALLOWED = {".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".html", ".md", ".mjs",
 SKIP_NAMES = {"Master_Build_Plan.md", "SYNC_GATE.md", "SYNC_LOG.md", "TEMPLATE_VERSION"}
 
 changed = 0
-for path in project_dir.rglob("*"):
+for line in transfer_list.read_text(encoding="utf-8").splitlines():
+    relative = line.strip()
+    if not relative:
+        continue
+    path = project_dir / relative
     if not path.is_file() or path.name in SKIP_NAMES:
         continue
     if not (path.name.startswith(".env") or path.suffix in ALLOWED):
@@ -206,6 +214,14 @@ for path in project_dir.rglob("*"):
         changed += 1
 print(f"  substituted in {changed} files")
 PY
+rm -f "$TRANSFER_LIST"
+
+# Rename the Django project package AFTER substitution (paths in the transfer
+# list refer to the original name).
+if [ -d "$PROJECT_DIR/backend/bp_company" ]; then
+  rm -rf "$PROJECT_DIR/backend/$PROJECT_NAME"
+  mv "$PROJECT_DIR/backend/bp_company" "$PROJECT_DIR/backend/$PROJECT_NAME"
+fi
 success "Files copied and renamed"
 
 # --------------------------------------------------------------- env files
