@@ -12,8 +12,9 @@
 #                     --db-user "$(whoami)" --db-password "" \
 #                     [--origin https://github.com/you/acmeco.git] \
 #                     [--seed-demo] [--skip-install] [--no-db] \
-#                     [--force]        # allow generating into an existing directory
-#                     [--recreate-db]  # drop + recreate the database if it exists
+#                     [--force]           # allow generating into an existing directory
+#                     [--recreate-db]     # drop + recreate the database if it exists
+#                     [--delete-template] # delete this template folder after setup
 #
 set -euo pipefail
 
@@ -29,7 +30,7 @@ fail()    { echo -e "${RED}[fail]${NC} $*"; exit 1; }
 # ---------------------------------------------------------------- arguments
 PROJECT_NAME=""; DISPLAY_NAME=""; PROJECT_DIR=""; DB_NAME=""; DB_USER=""; DB_PASSWORD=""
 DB_HOST="localhost"; DB_PORT="5432"; ORIGIN_URL=""; SEED_DEMO="ask"; SKIP_INSTALL=0; CREATE_DB=1
-FORCE_DIR=0; RECREATE_DB=0; OVERWRITING=0
+FORCE_DIR=0; RECREATE_DB=0; OVERWRITING=0; DELETE_TEMPLATE="ask"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -48,6 +49,7 @@ while [ $# -gt 0 ]; do
     --no-db) CREATE_DB=0; shift ;;
     --force) FORCE_DIR=1; shift ;;
     --recreate-db) RECREATE_DB=1; shift ;;
+    --delete-template) DELETE_TEMPLATE="yes"; shift ;;
     *) fail "Unknown option: $1" ;;
   esac
 done
@@ -386,3 +388,36 @@ echo "  # e2e:         npx playwright install chromium   (once), then: cd fronte
 echo
 echo "Re-theme in:  frontend/src/theme/tokens.css  ·  locales: frontend/src/i18n/config.ts"
 echo "Site config:  Django admin (SiteConfig) or seed your own management command."
+
+# ------------------------------------------- optional template self-cleanup
+# (Same flow as the original SaaS template: offer to remove the template copy
+# once installation is complete.)
+template_has_unsaved_work() {
+  [ -d "$TEMPLATE_DIR/.git" ] || return 1
+  if [ -n "$(git -C "$TEMPLATE_DIR" status --porcelain 2>/dev/null)" ]; then
+    return 0
+  fi
+  if [ -n "$(git -C "$TEMPLATE_DIR" log --oneline '@{u}..HEAD' 2>/dev/null)" ]; then
+    return 0
+  fi
+  return 1
+}
+
+if [ "$DELETE_TEMPLATE" = "ask" ] && [ "$INTERACTIVE" -eq 1 ]; then
+  echo
+  read -r -p "$(echo -e "${YELLOW}Installation is complete. Do you want to delete the template folder at ${TEMPLATE_DIR}? [y/N]: ${NC}")" ANSWER
+  case "${ANSWER:-n}" in y|Y) DELETE_TEMPLATE="yes" ;; *) DELETE_TEMPLATE="no" ;; esac
+fi
+
+if [ "$DELETE_TEMPLATE" = "yes" ]; then
+  if template_has_unsaved_work; then
+    warn "NOT deleting the template: it has uncommitted changes or unpushed commits."
+    warn "Commit/push them first, or delete it manually: rm -rf \"$TEMPLATE_DIR\""
+  else
+    success "Deleting template folder: $TEMPLATE_DIR"
+    cd "$(dirname "$TEMPLATE_DIR")"
+    exec /bin/rm -rf "$TEMPLATE_DIR"
+  fi
+else
+  info "Kept template folder at: $TEMPLATE_DIR"
+fi
