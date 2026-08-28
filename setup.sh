@@ -11,7 +11,9 @@
 #                     --dir "/path/to/acmeco" --db-name acmeco_db \
 #                     --db-user "$(whoami)" --db-password "" \
 #                     [--origin https://github.com/you/acmeco.git] \
-#                     [--seed-demo] [--skip-install] [--no-db]
+#                     [--seed-demo] [--skip-install] [--no-db] \
+#                     [--force]        # allow generating into an existing directory
+#                     [--recreate-db]  # drop + recreate the database if it exists
 #
 set -euo pipefail
 
@@ -27,6 +29,7 @@ fail()    { echo -e "${RED}[fail]${NC} $*"; exit 1; }
 # ---------------------------------------------------------------- arguments
 PROJECT_NAME=""; DISPLAY_NAME=""; PROJECT_DIR=""; DB_NAME=""; DB_USER=""; DB_PASSWORD=""
 DB_HOST="localhost"; DB_PORT="5432"; ORIGIN_URL=""; SEED_DEMO="ask"; SKIP_INSTALL=0; CREATE_DB=1
+FORCE_DIR=0; RECREATE_DB=0; OVERWRITING=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -43,12 +46,18 @@ while [ $# -gt 0 ]; do
     --no-seed-demo) SEED_DEMO="no"; shift ;;
     --skip-install) SKIP_INSTALL=1; shift ;;
     --no-db) CREATE_DB=0; shift ;;
+    --force) FORCE_DIR=1; shift ;;
+    --recreate-db) RECREATE_DB=1; shift ;;
     *) fail "Unknown option: $1" ;;
   esac
 done
 
 # ----------------------------------------------------------------- prompts
+# Interactive prompts only on a TTY; otherwise use defaults or fail loudly.
+INTERACTIVE=0; [ -t 0 ] && INTERACTIVE=1
+
 if [ -z "$PROJECT_NAME" ]; then
+  [ "$INTERACTIVE" -eq 1 ] || fail "Missing --name (required in non-interactive mode)."
   read -r -p "$(echo -e "${BLUE}Project name (python identifier, e.g. acmeco): ${NC}")" PROJECT_NAME
 fi
 [[ "$PROJECT_NAME" =~ ^[a-z_][a-z0-9_]*$ ]] || fail "Project name must be a lowercase python identifier (a-z, 0-9, _)."
@@ -57,32 +66,79 @@ fi
 KEBAB_NAME="${PROJECT_NAME//_/-}"
 
 if [ -z "$DISPLAY_NAME" ]; then
-  read -r -p "$(echo -e "${BLUE}Display name [${PROJECT_NAME}]: ${NC}")" DISPLAY_NAME
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    read -r -p "$(echo -e "${BLUE}Display name [${PROJECT_NAME}]: ${NC}")" DISPLAY_NAME
+  fi
   DISPLAY_NAME="${DISPLAY_NAME:-$PROJECT_NAME}"
 fi
 
 DEFAULT_DIR="$(dirname "$TEMPLATE_DIR")/$KEBAB_NAME"
 if [ -z "$PROJECT_DIR" ]; then
-  read -r -p "$(echo -e "${BLUE}Project directory [${DEFAULT_DIR}]: ${NC}")" PROJECT_DIR
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    read -r -p "$(echo -e "${BLUE}Project directory [${DEFAULT_DIR}]: ${NC}")" PROJECT_DIR
+  fi
   PROJECT_DIR="${PROJECT_DIR:-$DEFAULT_DIR}"
 fi
-[ -e "$PROJECT_DIR" ] && fail "Target already exists: $PROJECT_DIR"
+
+# --- existing-directory handling (mirrors the old SaaS template script) ---
+if [ -e "$PROJECT_DIR" ]; then
+  [ -d "$PROJECT_DIR" ] || fail "Target exists and is not a directory: $PROJECT_DIR"
+  if [ "$FORCE_DIR" -eq 1 ]; then
+    OVERWRITING=1
+  elif [ -t 0 ]; then
+    warn "Directory already exists: $PROJECT_DIR"
+    read -r -p "$(echo -e "${YELLOW}Continue and overwrite the generated files in it? Your own files (Design/, docs, .env backups, …) are kept; backend/ and frontend/ are replaced. [y/N]: ${NC}")" ANSWER
+    case "${ANSWER:-n}" in
+      y|Y) OVERWRITING=1 ;;
+      *) fail "Setup cancelled — target directory exists." ;;
+    esac
+  else
+    fail "Target already exists: $PROJECT_DIR  (pass --force to overwrite its generated files)"
+  fi
+fi
+
+# Safety guards before any overwrite can happen
+mkdir -p "$PROJECT_DIR"
+PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
+[ "$PROJECT_DIR" = "/" ] && fail "Refusing to use / as the project directory."
+[ "$PROJECT_DIR" = "$HOME" ] && fail "Refusing to use your home directory as the project directory."
+[ "$PROJECT_DIR" = "$TEMPLATE_DIR" ] && fail "Project directory must not be the template itself."
+case "$PROJECT_DIR/" in
+  "$TEMPLATE_DIR/"*) fail "Project directory must not be inside the template." ;;
+esac
+case "$TEMPLATE_DIR/" in
+  "$PROJECT_DIR/"*) fail "Project directory must not contain the template (you selected a parent folder of bp-company)." ;;
+esac
+
+if [ "$OVERWRITING" -eq 1 ]; then
+  # Remove prior generated app folders so stale files cannot survive.
+  rm -rf "$PROJECT_DIR/backend" "$PROJECT_DIR/frontend"
+  info "Existing directory: replacing generated files, keeping everything else."
+fi
 
 if [ -z "$DB_NAME" ]; then
-  read -r -p "$(echo -e "${BLUE}Database name [${PROJECT_NAME}_db]: ${NC}")" DB_NAME
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    read -r -p "$(echo -e "${BLUE}Database name [${PROJECT_NAME}_db]: ${NC}")" DB_NAME
+  fi
   DB_NAME="${DB_NAME:-${PROJECT_NAME}_db}"
 fi
 if [ -z "$DB_USER" ]; then
-  read -r -p "$(echo -e "${BLUE}Database user [$(whoami)]: ${NC}")" DB_USER
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    read -r -p "$(echo -e "${BLUE}Database user [$(whoami)]: ${NC}")" DB_USER
+  fi
   DB_USER="${DB_USER:-$(whoami)}"
 fi
-if [ -z "${DB_PASSWORD+x}" ] || { [ -z "$DB_PASSWORD" ] && [ -t 0 ] && [ "$SEED_DEMO" = "ask" ]; }; then
+if [ -z "$DB_PASSWORD" ] && [ "$INTERACTIVE" -eq 1 ]; then
   read -r -s -p "$(echo -e "${BLUE}Database password (empty for local trust auth): ${NC}")" DB_PASSWORD || true
   echo
 fi
 if [ "$SEED_DEMO" = "ask" ]; then
-  read -r -p "$(echo -e "${BLUE}Seed the Acme demo content? [y/N]: ${NC}")" ANSWER
-  case "${ANSWER:-n}" in y|Y) SEED_DEMO="yes" ;; *) SEED_DEMO="no" ;; esac
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    read -r -p "$(echo -e "${BLUE}Seed the Acme demo content? [y/N]: ${NC}")" ANSWER
+    case "${ANSWER:-n}" in y|Y) SEED_DEMO="yes" ;; *) SEED_DEMO="no" ;; esac
+  else
+    SEED_DEMO="no"
+  fi
 fi
 
 TEMPLATE_COMMIT="$(git -C "$TEMPLATE_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
@@ -110,6 +166,7 @@ rsync -a \
   --exclude '__pycache__' \
   --exclude '.DS_Store' \
   --exclude 'setup.sh' \
+  --exclude 'SYNC_LOG.md' \
   "$TEMPLATE_DIR/" "$PROJECT_DIR/"
 
 mv "$PROJECT_DIR/backend/bp_company" "$PROJECT_DIR/backend/$PROJECT_NAME"
@@ -204,16 +261,49 @@ success ".env files written (secrets generated)"
 
 # ------------------------------------------------------------------ database
 if [ "$CREATE_DB" -eq 1 ]; then
-  info "Creating database $DB_NAME..."
-  if command -v createdb >/dev/null 2>&1; then
-    if PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" 2>/dev/null; then
-      success "Database created"
-    else
-      warn "Could not create $DB_NAME (it may already exist, or auth failed)."
-      warn "Create it manually if needed: createdb $DB_NAME  (or use ./setup_database.sh)"
-    fi
+  if ! command -v psql >/dev/null 2>&1; then
+    warn "psql not found — create the database manually before migrating."
   else
-    warn "createdb not found — create the database manually before migrating."
+    # Can we even talk to the server?
+    if ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c '' >/dev/null 2>&1; then
+      warn "Cannot connect to PostgreSQL as $DB_USER@$DB_HOST:$DB_PORT (is it running? auth ok?)."
+      warn "Create the database manually: createdb $DB_NAME  (or use ./setup_database.sh)"
+    else
+      DB_EXISTS="no"
+      if PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -Atc \
+           "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" 2>/dev/null | grep -q 1; then
+        DB_EXISTS="yes"
+      fi
+
+      if [ "$DB_EXISTS" = "yes" ]; then
+        DROP_IT=0
+        if [ "$RECREATE_DB" -eq 1 ]; then
+          DROP_IT=1
+        elif [ -t 0 ]; then
+          warn "Database $DB_NAME already exists."
+          read -r -p "$(echo -e "${YELLOW}Drop and recreate it? All its data will be lost. [y/N]: ${NC}")" ANSWER
+          case "${ANSWER:-n}" in y|Y) DROP_IT=1 ;; esac
+        else
+          warn "Database $DB_NAME already exists — using it as-is (pass --recreate-db to drop + recreate)."
+          warn "Beware: a database from another project may contain stale tables."
+        fi
+        if [ "$DROP_IT" -eq 1 ]; then
+          PGPASSWORD="$DB_PASSWORD" dropdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" \
+            || fail "Could not drop $DB_NAME (close open connections and retry)."
+          success "Database dropped"
+          DB_EXISTS="no"
+        fi
+      fi
+
+      if [ "$DB_EXISTS" = "no" ]; then
+        info "Creating database $DB_NAME..."
+        PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" \
+          || fail "Could not create $DB_NAME."
+        success "Database created"
+      else
+        info "Using existing database $DB_NAME."
+      fi
+    fi
   fi
 fi
 
@@ -253,11 +343,11 @@ else
 fi
 
 # ------------------------------------------------------------------- git
-info "Initializing git repository..."
 (
   cd "$PROJECT_DIR"
   echo "$TEMPLATE_COMMIT" > TEMPLATE_VERSION
-  cat > SYNC_LOG.md <<EOF
+  if [ ! -f SYNC_LOG.md ]; then
+    cat > SYNC_LOG.md <<EOF
 # Sync Log — $PROJECT_NAME
 
 Derived from bp-company @ $TEMPLATE_COMMIT ($(date +%Y-%m-%d)).
@@ -267,13 +357,21 @@ See SYNC_GATE.md for the two-repo protocol. Statuses: synced / PENDING / n/a.
 |------|-------|-----------|-------------|-------|-----------|--------|
 | $(date +%Y-%m-%d) | derive | (baseline) | Generated from bp-company @ $TEMPLATE_COMMIT via setup.sh | generic | template→client | synced |
 EOF
-  git init -q -b main
-  git add -A
-  git commit -q -m "Initial commit: $PROJECT_NAME derived from bp-company @ $TEMPLATE_COMMIT"
-  git remote add template "$TEMPLATE_REMOTE"
-  [ -n "$ORIGIN_URL" ] && git remote add origin "$ORIGIN_URL"
+  fi
+
+  if [ -d .git ]; then
+    warn "Existing git repository detected — history, remotes and SYNC_LOG.md kept."
+    warn "Review and commit the regeneration yourself: git status && git add -A && git commit"
+  else
+    info "Initializing git repository..."
+    git init -q -b main
+    git add -A
+    git commit -q -m "Initial commit: $PROJECT_NAME derived from bp-company @ $TEMPLATE_COMMIT"
+    git remote add template "$TEMPLATE_REMOTE"
+    [ -n "$ORIGIN_URL" ] && git remote add origin "$ORIGIN_URL"
+    echo -e "${GREEN}[ ok ]${NC} Git repository initialized (remote 'template' -> bp-company$( [ -n "$ORIGIN_URL" ] && echo ", 'origin' -> $ORIGIN_URL" ))"
+  fi
 )
-success "Git repository initialized (remote 'template' -> bp-company$( [ -n "$ORIGIN_URL" ] && echo ", 'origin' -> $ORIGIN_URL" ))"
 
 echo
 success "Project '$PROJECT_NAME' created at: $PROJECT_DIR"
