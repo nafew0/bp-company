@@ -53,14 +53,19 @@ See **`QUICKSTART.md`**. TL;DR: create a Postgres DB, `backend/.env` from `.env.
 
 ## Starting a new client site
 
+The classic template workflow: put a copy of this folder inside your client's project folder, run the generator from it, and let it clean itself up at the end.
+
 ```bash
-./setup.sh
+git clone https://github.com/nafew0/bp-company.git template   # (or copy the folder)
+./template/setup.sh
+# ... prompts, generation ...
+# "Installation is complete. Do you want to delete the template folder at ...? [y/N]"
 ```
 
 The generator asks for a project name, display name, directory, and database, then produces a fully renamed, ready-to-run project (like the old `{{PROJECT_NAME}}` template, but generated from this **living, tested** tree — substitution happens at generation time, so the template itself keeps its 188 backend tests + Playwright suite running in CI). It copies the tree, renames the Django package and every `bp_company`/`bp-company`/`BP-Company` reference, generates `.env` files with fresh secrets, creates the database, installs backend+frontend dependencies, migrates, seeds the pipeline stages (demo content optional), and initializes a git repo with a `template` remote pointing back here (baseline recorded in `TEMPLATE_VERSION` + `SYNC_LOG.md`).
 
-Non-interactive: `./setup.sh --name acmeco --display "AcmeCo" --dir ../acmeco --db-name acmeco_db --db-user "$(whoami)" --db-password "" [--origin <git-url>] [--seed-demo] [--skip-install] [--no-db] [--force] [--recreate-db]`
+Non-interactive: `./setup.sh --name acmeco --display "AcmeCo" --dir ../acmeco --db-name acmeco_db --db-user "$(whoami)" --db-password "" [--origin <git-url>] [--seed-demo] [--skip-install] [--no-db] [--force] [--recreate-db] [--delete-template]`
 
-Existing targets are handled safely: an existing **directory** prompts *"continue and overwrite?"* (interactive) or requires `--force` — only generated files (`backend/`, `frontend/`, template docs) are replaced, your own files, git history and `SYNC_LOG.md` are kept; an existing **database** prompts *"drop and recreate?"* or requires `--recreate-db`, otherwise it is used as-is with a stale-tables warning. Guards refuse `/`, `$HOME`, the template folder itself, and any parent folder of the template.
+Existing targets are handled safely: an existing **directory** prompts *"continue and overwrite?"* (interactive) or requires `--force` — only generated files (`backend/`, `frontend/`, template docs) are replaced, your own files, git history and `SYNC_LOG.md` are kept; an existing **database** prompts *"drop and recreate?"* or requires `--recreate-db`, otherwise it is used as-is with a stale-tables warning. Guards refuse `/`, `$HOME`, the template folder itself, and any parent folder of the template. The end-of-run **template self-deletion** prompt refuses to delete a copy that has uncommitted changes or unpushed commits, so it can never destroy your primary checkout.
 
 Then: re-theme `frontend/src/theme/tokens.css`, set locales in `frontend/src/i18n/config.ts`, configure SiteConfig, and build funnels on the section kit. Checklist polish lands in BP-9.
