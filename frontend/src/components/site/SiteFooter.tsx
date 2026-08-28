@@ -54,7 +54,7 @@ export default function SiteFooter({
                 </p>
                 <ul className="mt-3 space-y-2">
                   {quickLinks.map((link) => (
-                    <li key={link.href}>
+                    <li key={`${link.href}:${link.label}`}>
                       <Link
                         href={link.href}
                         className="text-body-sm text-ink-inverse/80 hover:text-ink-inverse"
@@ -74,7 +74,7 @@ export default function SiteFooter({
                 </p>
                 <ul className="mt-3 space-y-2">
                   {serviceLinks.map((link) => (
-                    <li key={link.href}>
+                    <li key={`${link.href}:${link.label}`}>
                       <Link
                         href={link.href}
                         className="text-body-sm text-ink-inverse/80 hover:text-ink-inverse"
